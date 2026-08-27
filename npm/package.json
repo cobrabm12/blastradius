@@ -1,0 +1,13 @@
+{
+  "name": "blastradius",
+  "version": "0.1.0",
+  "description": "Deterministic guardrails for coding agents: parse the shell, compute what a command destroys, check it against policy.",
+  "keywords": ["ai", "agent", "claude-code", "codex", "guardrails", "safety", "shell", "hooks"],
+  "homepage": "https://github.com/cobrabm12/blastradius",
+  "repository": { "type": "git", "url": "git+https://github.com/cobrabm12/blastradius.git" },
+  "license": "Apache-2.0",
+  "bin": { "blastradius": "bin/blastradius.js" },
+  "scripts": { "postinstall": "node install.js" },
+  "files": ["bin/", "install.js"],
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,28 @@
+# blastradius governs its own repository.
+#
+# Rules are ordered; for any target and verb, the LAST matching rule wins.
+# Verbs: read, write, delete, truncate (paths) — read, write, exec (hosts).
+
+version: 1
+
+on_error: ask
+
+paths:
+  - match: "**/.git/**"
+    deny: [write, delete, truncate]
+    reason: "Repository metadata; losing it loses the project's history."
+
+  - match: "**/testdata/**"
+    ask: [delete, truncate]
+    reason: "The corpus is the specification. Deleting cases weakens the tool silently."
+
+  - match: "**/.env*"
+    deny: [read, write, delete]
+    reason: "Credentials. Not for agents."
+
+  - match: "**/dist/**"
+    allow: [delete, truncate, write]
+
+git:
+  protected_branches: [main]
+  deny: [force_push]

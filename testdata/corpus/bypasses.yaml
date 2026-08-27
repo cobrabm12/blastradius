@@ -1,0 +1,186 @@
+# Commands that a regular-expression denylist misses.
+#
+# Every entry here is a command that reads as harmless to string matching but
+# destroys protected data once the shell actually runs it. When someone reports
+# a new way past blastradius, it belongs in this file first — as a failing case
+# — and the fix follows.
+
+- name: split_flags_and_variable
+  command: 'rm -r -f "$HOME/prod"'
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+    deletes: ["/home/u/prod"]
+
+- name: combined_flags
+  command: "rm -rf /home/u/prod"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: absolute_binary_path
+  command: "/bin/rm -rf /home/u/prod"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: deletion_without_rm_via_find
+  command: "find . -name '*.db' -delete"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: deletion_without_rm_via_git_clean
+  command: "git clean -xfd"
+  cwd: /home/u/prod
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: truncation_via_redirect
+  command: ": > orders.db"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+    truncates: ["/home/u/app/orders.db"]
+
+- name: truncation_via_tee
+  command: "echo x | tee orders.db"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: nested_bash_c
+  command: "bash -c 'rm -rf ~/prod'"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+    deletes: ["/home/u/prod"]
+
+- name: sudo_prefix
+  command: "sudo rm -rf /home/u/prod"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: env_prefix
+  command: "env FOO=1 rm -rf /home/u/prod"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: xargs_supplies_argv_from_stdin
+  command: "xargs rm < filelist"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: ask
+
+- name: find_exec_rm
+  command: "find /home/u/prod -name '*.tmp' -exec rm -f {} ;"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: move_out_of_production
+  command: "mv /home/u/prod/db.sqlite /tmp/"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: sed_in_place_on_production
+  command: "sed -i 's/a/b/' /home/u/prod/config.yaml"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: reading_dotenv_is_denied
+  command: "cat /home/u/app/.env"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: command_substitution_is_unresolvable
+  command: "rm -rf $(cat target.txt)"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: ask
+
+- name: unset_variable_is_unresolvable
+  command: 'rm -rf "$UNSET_TARGET/data"'
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: ask
+
+- name: glob_inside_protected_directory
+  command: "rm -f /home/u/prod/*.log"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: chained_command_after_harmless_one
+  command: "echo starting && rm -rf /home/u/prod"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: force_push_to_protected_branch
+  command: "git push --force origin main"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: remote_exec_on_production_host
+  command: "ssh deploy@86.123.173.94 'systemctl restart app'"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: rsync_to_production_host
+  command: "rsync -av ./dist/ deploy@86.123.173.94:/var/www/"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: rsync_to_staging_host_asks
+  command: "rsync -av ./dist/ deploy@staging.ezweb.ro:/var/www/"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: ask
+
+# Regression: a permissive rule at the bottom of a policy must not absorb an
+# unexpanded glob and cancel the protections above it.
+- name: glob_not_absorbed_by_node_modules_exception
+  command: "rm -f *.db"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block
+
+- name: glob_delete_in_production_directory
+  command: "rm -f /home/u/prod/*"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: block

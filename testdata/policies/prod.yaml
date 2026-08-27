@@ -1,0 +1,30 @@
+version: 1
+on_error: ask
+
+paths:
+  - match: "/home/u/prod/**"
+    deny: [write, delete, truncate]
+    reason: "Production source; the live server is read-only by policy."
+
+  - match: "/home/u/**/*.db"
+    deny: [delete, truncate]
+    reason: "Databases are add-only here; back up before any destructive change."
+
+  - match: "/home/u/**/.env*"
+    deny: [read, write, delete]
+    reason: "Credentials. Not for agents."
+
+  - match: "/home/u/**/node_modules/**"
+    allow: [delete, truncate]
+
+hosts:
+  - match: "86.123.173.94"
+    deny: [write, exec]
+    reason: "Production server, read-only."
+
+  - match: "*.ezweb.ro"
+    ask: [write, exec]
+
+git:
+  protected_branches: [main, master]
+  deny: [force_push]

@@ -1,0 +1,117 @@
+# Ordinary work that must stay out of the agent's way.
+#
+# A guardrail that cries wolf gets disabled within a week, so false positives
+# are treated as bugs of the same severity as missed bypasses. Every case here
+# runs against the same strict policy as the bypass corpus.
+
+- name: deleting_node_modules_is_fair_game
+  command: "rm -rf node_modules"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: deleting_nested_node_modules
+  command: "rm -rf packages/web/node_modules"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: building_into_dist
+  command: "mkdir -p dist && touch dist/index.js"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: reading_a_source_file
+  command: "cat src/main.go"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: grepping_the_tree
+  command: "grep -rn TODO src"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: reading_production_source_is_permitted
+  command: "cat /home/u/prod/README.md"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: git_status
+  command: "git status"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: git_push_to_feature_branch
+  command: "git push origin feature-x"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: git_push_force_to_feature_branch
+  command: "git push --force origin feature-x"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: appending_to_a_log
+  command: "echo done >> build.log"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: sed_without_in_place_only_reads
+  command: "sed 's/a/b/' src/config.yaml"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: printing_text_names_no_paths
+  command: "echo /home/u/prod/db.sqlite"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: reading_a_database_is_not_deleting_it
+  command: "cat /home/u/app/orders.db"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: local_psql_select
+  command: "psql -h localhost -c 'SELECT 1'"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
+
+- name: permissive_policy_allows_the_unknown
+  command: "frobnicate --wipe /srv"
+  cwd: /home/u/app
+  policy: testdata/policies/permissive.yaml
+  expect:
+    verdict: allow
+
+- name: glob_inside_node_modules_stays_allowed
+  command: "rm -rf node_modules/*"
+  cwd: /home/u/app
+  policy: testdata/policies/prod.yaml
+  expect:
+    verdict: allow
