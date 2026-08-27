@@ -64,6 +64,21 @@ go vet ./...
 gofmt -l .             # must print nothing
 ```
 
+## Releasing
+
+Tagging `vX.Y.Z` triggers goreleaser, which builds the binaries and creates the
+GitHub release. The npm wrapper is published separately and must be kept in
+step, because `install.js` downloads the release matching its own version:
+
+```bash
+cp README.md LICENSE npm/          # the npm page renders the package README
+npm version --no-git-tag-version X.Y.Z --prefix npm
+cd npm && npm publish
+```
+
+Publish npm only after the GitHub release exists, or `postinstall` will fetch a
+URL that is not there yet.
+
 ## Commits
 
 Conventional commits (`feat:`, `fix:`, `docs:`, `test:`), present tense. Explain

@@ -62,10 +62,17 @@ function download(from, to, redirects = 0) {
 
 download(url, archive)
   .then(() => {
+    // Extract only the executable. The archive also carries README and
+    // LICENSE, which belong in the package root, not next to the binary.
     if (isWindows) {
-      execSync(`powershell -Command "Expand-Archive -Force '${archive}' '${binDir}'"`);
+      execSync(
+        `powershell -Command "Expand-Archive -Force '${archive}' '${binDir}'"`
+      );
+      for (const extra of ["README.md", "LICENSE"]) {
+        fs.rmSync(path.join(binDir, extra), { force: true });
+      }
     } else {
-      execSync(`tar -xzf "${archive}" -C "${binDir}"`);
+      execSync(`tar -xzf "${archive}" -C "${binDir}" blastradius`);
       fs.chmodSync(path.join(binDir, "blastradius"), 0o755);
     }
     fs.unlinkSync(archive);

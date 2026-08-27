@@ -1,3 +1,6 @@
 /blastradius
 /dist/
 *.jsonl
+/npm/bin/blastradius
+/npm/bin/blastradius.exe
+/npm/*.tgz
