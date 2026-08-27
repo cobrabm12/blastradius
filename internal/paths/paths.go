@@ -6,7 +6,7 @@
 package paths
 
 import (
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/cobrabm12/blastradius/internal/shell"
@@ -51,16 +51,26 @@ func resolveOne(s, raw string, ctx Context) Path {
 	if s == "~" {
 		s = ctx.Home
 	} else if strings.HasPrefix(s, "~/") {
-		s = filepath.Join(ctx.Home, s[2:])
+		s = path.Join(ctx.Home, s[2:])
 	}
 	isGlob := strings.ContainsAny(s, "*?[")
-	if !filepath.IsAbs(s) {
-		s = filepath.Join(ctx.Cwd, s)
+	if !isAbs(s) {
+		s = path.Join(ctx.Cwd, s)
 	} else {
-		s = filepath.Clean(s)
+		s = path.Clean(s)
 	}
 	return Path{Raw: raw, Abs: s, Resolved: true, IsGlob: isGlob}
 }
+
+// isAbs reports whether a path is absolute in POSIX terms.
+//
+// The package deliberately uses slash semantics rather than the host's, because
+// what it analyzes is a shell command: those carry POSIX paths whether the
+// analyzer runs on Linux, macOS, or Windows under WSL or git-bash. Using
+// path/filepath here would make a verdict depend on the operating system of the
+// machine doing the analysis, which is exactly the kind of nondeterminism this
+// project exists to avoid.
+func isAbs(s string) bool { return strings.HasPrefix(s, "/") }
 
 // substituteVars replaces ${NAME} references. The bool reports whether every
 // reference was known.

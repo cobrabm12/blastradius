@@ -83,3 +83,16 @@ func TestExpandRelativeTraversalEscapesCwd(t *testing.T) {
 		t.Errorf("Abs = %q, want /home/prod", got[0].Abs)
 	}
 }
+
+// TestResolutionIsHostIndependent pins the decision to use POSIX semantics
+// rather than the host's. The analyzer must return the same verdict for the
+// same command regardless of which operating system it runs on.
+func TestResolutionIsHostIndependent(t *testing.T) {
+	got := Expand("/srv/data", ctx())
+	if got[0].Abs != "/srv/data" {
+		t.Errorf("Abs = %q, want /srv/data with forward slashes on every platform", got[0].Abs)
+	}
+	if joined := Expand("sub/dir", ctx()); joined[0].Abs != "/home/u/app/sub/dir" {
+		t.Errorf("Abs = %q, want forward-slash joining on every platform", joined[0].Abs)
+	}
+}
